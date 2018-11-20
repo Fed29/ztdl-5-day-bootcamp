@@ -13,7 +13,17 @@ The script saves the trained model to disk for later use
 
 import numpy as np
 from sklearn.datasets import load_files
-
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import make_pipeline
+# from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+import gzip
+import dill
 
 # The training data folder must be passed as first argument
 try:
@@ -26,13 +36,18 @@ except OSError as ex:
 
 # TASK: Split the dataset in training and test set
 # (use 20% of the data for test):
+docs = dataset.data
+labels = dataset.target
 
+docs_train, docs_test, y_train, y_test = train_test_split(docs, labels, test_size=0.2, random_state=42)
 
 # TASK: Build a an vectorizer that splits
 # strings into sequence of 1 to 3
 # characters instead of word tokens
 # using the class TfidfVectorizer
 
+# vec = TfidfVectorizer(ngram_range=(1,3), analyzer="char")
+vec = TfidfVectorizer(analyzer='char', ngram_range=(2, 4))
 
 # TASK: Use the function make_pipeline to build a
 #       vectorizer / classifier pipeline
@@ -40,27 +55,33 @@ except OSError as ex:
 #       and a classifier of choice.
 #       The pipeline instance should be
 #       stored in a variable named model
-
+clf = LogisticRegression(C=10)
+model = make_pipeline(vec, clf)
 
 # TASK: Fit the pipeline on the training set
-
+model.fit(docs_train, y_train)
 
 # TASK: Predict the outcome on the testing set.
 # Store the result in a variable named y_predicted
-
+y_predicted = model.predict(docs_test)
 
 # TASK: Print the classification report
-
+print(classification_report(y_test, y_predicted))
 
 # TASK: Print the confusion matrix. Bonus points if you make it pretty.
 
+cm = confusion_matrix(y_test, y_predicted)
+print(pd.DataFrame(cm, index=dataset.target_names, columns=["p_" + c for c in dataset.target_names]))
 
 # TASK: Is the score good? Can you improve it changing
 #       the parameters or the classifier?
 #       Try using cross validation and grid search
+
 
 # TASK: Use dill and gzip to persist the trained model in memory.
 #       1) gzip.open a file called my_model.dill.gz
 #       2) dump to the file both your trained classifier
 #          and the target_names of the dataset (for later use)
 #    They should be passed as a list [model, dataset.target_names]
+with gzip.open('my_model.dill.gz', 'wb') as f:
+    dill.dump([model, dataset.target_names], f)
