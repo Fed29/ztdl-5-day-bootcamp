@@ -1,3 +1,5 @@
+ml/wikidata.zip
+*.ipynb_checkpoints*
 ml/wikidata
 dwheroku
 .DS_Store
